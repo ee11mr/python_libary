@@ -59,7 +59,7 @@ def get_gc_var(rundir, species, version='12.9.3'):
         var=var*1e6
     elif d[species]['unit'] == 'ppbv':
         var=var*1e9
-    elif d[species]['unit'] == 'pp7v':
+    elif d[species]['unit'] == 'pptv':
         var=var*1e12
 
     return var, lat, lon, lev, times
