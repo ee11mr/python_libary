@@ -57,15 +57,9 @@ def get_from_merge(d, timestep=False):
             '10th':df[df.columns[0]].resample(timestep).quantile(0.1),
             '90th':df[df.columns[0]].resample(timestep).quantile(0.9)},
             index=mindex)
-    '''else:
-        df = pd.DataFrame({'mean':df[df.columns[0]].resample(timestep).mean(),
-            'median':df[df.columns[0]].resample(timestep).median(),
-            #'min':df[df.columns[0]].resample(timestep).min(),
-            #'max':df[df.columns[0]].resample(timestep).max(),
-            '10th':df[df.columns[0]].resample(timestep).quantile(0.1),
-            '90th':df[df.columns[0]].resample(timestep).quantile(0.9)},
-            index=mindex)
-    '''
+    else:
+        df.columns=['Value']
+    
     return df
 
 
