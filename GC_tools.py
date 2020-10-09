@@ -39,7 +39,9 @@ def get_gc_var(rundir, species, version='12.9.3'):
         t0=(int, re.findall(r'\d+', t0))[1]
         t0=datetime.datetime(int(t0[0]), int(t0[1]), int(t0[2]), int(t0[3]), int(t0[4]), int(t0[5]) )
         for dt in time:
-            times.append( t0 + datetime.timedelta(minutes=dt) )
+            rounded_dt = hour_rounder(t0 + datetime.timedelta(minutes=dt))
+            times.append(rounded_dt)
+            #times.append( t0 + datetime.timedelta(minutes=dt) )
         
         if i==0:
             lat=fh.variables['lat'][:]
@@ -61,3 +63,8 @@ def get_gc_var(rundir, species, version='12.9.3'):
 
     return var, lat, lon, lev, times
 
+
+def hour_rounder(t):
+    # Rounds to nearest hour by adding a timedelta hour if minute >= 30
+    return (t.replace(second=0, microsecond=0, minute=0, hour=t.hour)
+                               +datetime.timedelta(hours=t.minute//30))
