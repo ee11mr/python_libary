@@ -1,0 +1,55 @@
+Useful commands  
+
+scp filename ee11mr@see-gw-01.leeds.ac.uk:/nfs/a65/ee11mr/.
+#Copies files between machines
+
+touch -am file3
+#Changes files modification time to current time
+
+:%s/foo/bar/gc
+#Search and replace in vim, asking for confirmation
+
+:%s/foo/bar/g
+#Same without asking for confirmation (Good for replacing large amounts quickly)
+
+qstat -u ee11mr
+
+qsched -u ee11mr
+
+ls -1 | wc -l
+#Count the number of files in a directory
+
+D
+#Delete a line in vim
+
+dgg
+#Delete all text above current line (vim)
+
+dG 
+#Delete all text below current line (vim)
+
+u
+Undo (vim)
+
+df -h /nobackup 
+#Indicate how much data used and remaining capacity on /nobackup
+
+env | awk '/SHELL/'
+#Find my current shell
+
+ps
+#See current processes
+
+kill -9 <ID>
+#Kill a process using its id number
+
+ps -ef | grep defunct
+#Find the parent process so that it can be killed
+
+crontab -e
+#Schedule commands to run automatically
+
+cosweights = np.cos(np.deg2rad(lat))
+cosweights = np.swapaxes((np.tile(np.tile(cosweights,lev),lon)).reshape(lev,lon,lat),1,2)
+data=data * cosweights
+# Apply weighting by latitude to an array of data
