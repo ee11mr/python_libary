@@ -30,8 +30,9 @@ def get_n_timesteps(rundir, version='12.9.3'):
 def get_gc_var(rundir, species, version='12.9.3'):
     gc_var=[] ; times=[]
     for i,infile in enumerate(sorted(glob.glob('/users/mjr583/scratch/GC/%s/%s/output/GEOSChem.SpeciesConc.*.nc4' % (version, rundir)))):
+        gc_species=d[species]['GC_name']
         fh=Dataset(infile)
-        var=fh.variables['SpeciesConc_%s' %species][:]
+        var=fh.variables['SpeciesConc_%s' %gc_species][:]
         gc_var.append(var)
         
         time=fh.variables['time'][:]

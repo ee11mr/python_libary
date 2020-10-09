@@ -20,6 +20,7 @@ CVAO_dict = {
                  'yscale' : 'linear',
                  'start_year' : '2006',
                  'merge_name' : 'O3',
+                 'GC_name' : 'O3',
                  'instrument' : ''
                 },
     'CO' : {'variable' : 'CO',
@@ -34,6 +35,7 @@ CVAO_dict = {
                 'yscale' : 'linear',
                 'start_year' : '2006',
                 'merge_name' : 'CO',# (ppbV)',
+                'GC_name' : 'CO',
                 'instrument' : ''
                 },
     'CH4' : {'variable' : 'CH4',
@@ -48,6 +50,7 @@ CVAO_dict = {
                 'yscale' : 'linear',
                 'start_year' : '2006',
                 'merge_name' : 'CH4_all',# (ppbV)',
+                'GC_name' : 'CH4',
                 'instrument' : ''
                 },
     'CO2' : {'variable' : 'CO2',
@@ -62,6 +65,7 @@ CVAO_dict = {
                 'yscale' : 'linear',
                 'start_year' : '2006',
                 'merge_name' : 'CO2',# (ppmV)',
+                'GC_name' : 'CO2',
                 'instrument' : ''
                 },
     'NO' : {'variable' : 'NO',
@@ -76,6 +80,7 @@ CVAO_dict = {
                 'yscale' : 'log',
                 'start_year' : '2006',
                 'merge_name' : 'NO',# (pptV)',
+                'GC_name' : 'NO',
                 'instrument' : ''
                 },
     'NO2' : {'variable' : 'NO2',
@@ -90,6 +95,7 @@ CVAO_dict = {
                  'yscale' : 'linear',
                  'start_year' : '2006',
                  'merge_name' : 'NO2',# (pptV)',
+                 'GC_name' : 'NO2',
                  'instrument' : ''
                 },
     'propane' : {'variable' : 'propane',
@@ -104,6 +110,7 @@ CVAO_dict = {
                      'yscale' : 'linear',
                      'start_year' : '2006',
                      'merge_name' : 'propane',# (pptV)',
+                     'GC_name' : 'C3H8',
                      'instrument' : ''
                 },
     'ethane' : {'variable' : 'ethane',
@@ -118,6 +125,7 @@ CVAO_dict = {
                      'yscale' : 'linear',
                      'start_year' : '2006',
                      'merge_name' : 'ethane',# (pptV)',
+                     'GC_name' : 'C2H6',
                      'instrument' : ''
                 },
     'iso_butane' : {'variable' : 'iso_butane',
@@ -160,6 +168,7 @@ CVAO_dict = {
                      'yscale' : 'linear',
                      'start_year' : '2006',
                      'merge_name' : 'acetylene',# (pptV)',
+                     'GC_name' : None,
                      'instrument' : ''
                 },
     'iso_pentane' : {'variable' : 'iso_pentane',
@@ -174,6 +183,7 @@ CVAO_dict = {
                      'yscale' : 'log',
                      'start_year' : '2006',
                      'merge_name' : 'iso_pentane',# (pptV)',
+                     'GC_name' : None,
                      'instrument' : ''
                 },
     'n_pentane' : {'variable' : 'n_pentane',
@@ -188,6 +198,7 @@ CVAO_dict = {
                      'yscale' : 'log',
                      'start_year' : '2006',
                      'merge_name' : 'n_pentane',# (pptV)',
+                     'GC_name' : None,
                      'instrument' : ''
                 },
     'ethene' : {'variable' : 'ethene',
@@ -202,6 +213,7 @@ CVAO_dict = {
                      'yscale' : 'log',
                      'start_year' : '2006',
                      'merge_name' : 'ethene',# (pptV)',
+                     'GC_name' : None,
                      'instrument' : ''
                 },
     'propene' : {'variable' : 'propene',
@@ -216,6 +228,7 @@ CVAO_dict = {
                      'yscale' : 'linear',
                      'start_year' : '2006',
                      'merge_name' : 'propene',# (pptV)',
+                     'GC_name' : None,
                      'instrument' : ''
                 },
     'benzene' : {'variable' : 'benzene',
@@ -230,6 +243,7 @@ CVAO_dict = {
                      'yscale' : 'linear',
                      'start_year' : '2006',
                      'merge_name' : 'benzene',# (pptV)',
+                     'GC_name' : 'BENZ',
                      'instrument' : ''
                 },
     'toluene' : {'variable' : 'toluene',
@@ -244,6 +258,7 @@ CVAO_dict = {
                      'yscale' : 'linear',
                      'start_year' : '2006',
                      'merge_name' : 'toluene',# (pptV)',
+                     'GC_name' : 'TOLU',
                      'instrument' : ''
                 },
     'Mercury' : {'variable' : 'Mercury',
@@ -258,6 +273,7 @@ CVAO_dict = {
                      'yscale' : 'linear',
                      'start_year' : '2006',
                      'merge_name' : 'Total Gaseous Mercury (ngm-3)',
+                     'GC_name' : None,
                      'instrument' : ''
                 },
     'CHBr3' : {'variable' : 'CHBr3',
@@ -272,6 +288,7 @@ CVAO_dict = {
                      'yscale' : 'log',
                      'start_year' : '2006',
                      'merge_name' : 'CHBr3',# (pptV)',
+                     'GC_name' : 'CHBr3',
                      'instrument' : ''
                 },
     'CH2Br2' : {'variable' : 'CH2Br2',
@@ -286,6 +303,7 @@ CVAO_dict = {
                      'yscale' : 'linear',
                      'start_year' : '2006',
                      'merge_name' : 'CH2Br2',# (pptV)',
+                     'GC_name' : 'CH2Br2',
                      'instrument' : ''
                 },
     'CCl4' : {'variable' : 'CCl4',
@@ -300,6 +318,7 @@ CVAO_dict = {
                      'yscale' : 'linear',
                      'start_year' : '2006',
                      'merge_name' : 'CCl4',# (pptV)',
+                     'GC_name' : 'CCl4',
                      'instrument' : ''
                 },
     'CH2I2' : {'variable' : 'CH2I2',
@@ -314,6 +333,7 @@ CVAO_dict = {
                      'yscale' : 'log',
                      'start_year' : '2006',
                      'merge_name' : 'CH2I2',# (pptV)',
+                     'GC_name' : 'CH2I2',
                      'instrument' : ''
                 },
     'CH3I' : {'variable' : 'CH3I',
@@ -328,6 +348,7 @@ CVAO_dict = {
                      'yscale' : 'linear',
                      'start_year' : '2006',
                      'merge_name' : 'CH3I',# (pptV)',
+                     'GC_name' : 'CH3I',
                      'instrument' : ''
                 },
     'CH2ICl' : {'variable' : 'CH2ICl',
@@ -342,6 +363,7 @@ CVAO_dict = {
                      'yscale' : 'log',
                      'start_year' : '2006',
                      'merge_name' : 'CH2ICl',# (pptV)',
+                     'GC_name' : 'CH2ICl',
                      'instrument' : ''
                 },
     'CHCl3' : {'variable' : 'CHCl3',
@@ -356,6 +378,7 @@ CVAO_dict = {
                      'yscale' : 'linear',
                      'start_year' : '2006',
                      'merge_name' : 'CHCl3',# (pptV)',
+                     'GC_name' : 'CHCl3',
                      'instrument' : ''
                 },
     'CH2BrCl' : {'variable' : 'CH2BrCl',
@@ -370,6 +393,7 @@ CVAO_dict = {
                      'yscale' : 'log',
                      'start_year' : '2006',
                      'merge_name' : 'CH2BrCl',# (pptV)',
+                     'GC_name' : None,
                      'instrument' : ''
                 },
     'CH2IBr' : {'variable' : 'CH2IBr',
@@ -384,6 +408,7 @@ CVAO_dict = {
                      'yscale' : 'linear',
                      'start_year' : '2006',
                      'merge_name' : 'CH2IBr',# (pptV)',
+                     'GC_name' : 'CL2IBr',
                      'instrument' : ''
                 },
     'CHBr2Cl' : {'variable' : 'CHBr2Cl',
@@ -398,6 +423,7 @@ CVAO_dict = {
                      'yscale' : 'log',
                      'start_year' : '2006',
                      'merge_name' : 'CHBr2Cl',# (pptV)',
+                     'GC_name' : None,
                      'instrument' : ''
                 },
     'SO2' : {'variable' : 'SO2',
@@ -412,6 +438,7 @@ CVAO_dict = {
                      'yscale' : 'linear',
                      'start_year' : '2006',
                      'merge_name' : 'SO2',# (ppbV)',
+                     'GC_name' : 'SO2',
                      'instrument' : ''
                 },
     'DMS' : {'variable' : 'DMS',
@@ -440,6 +467,7 @@ CVAO_dict = {
                      'yscale' : 'linear',
                      'start_year' : '2006',
                      'merge_name' : 'Isoprene',# (pptV)',
+                     'GC_name' : None,
                      'instrument' : ''
                 },
     'acetaldehyde' : {'variable' : 'acetaldehyde',
@@ -454,6 +482,7 @@ CVAO_dict = {
                      'yscale' : 'log',
                      'start_year' : '2006',
                      'merge_name' : 'acetaldehyde',
+                     'GC_name' : 'ALD2',
                      'instrument' : ''
                 },
     'meoh' : {'variable' : 'meoh',
@@ -468,6 +497,7 @@ CVAO_dict = {
                      'yscale' : 'log',
                      'start_year' : '2006',
                      'merge_name' : 'meoh',
+                     'GC_name' : 'MOH',
                      'instrument' : ''
                 },
     'acetone' : {'variable' : 'acetone',
@@ -482,6 +512,7 @@ CVAO_dict = {
                      'yscale' : 'log',
                      'start_year' : '2006',
                      'merge_name' : 'acetone',
+                     'GC_name' : 'ACET',
                      'instrument' : ''
                 },
     }
