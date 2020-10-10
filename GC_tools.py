@@ -30,9 +30,9 @@ def get_arguments():
     parser = argparse.ArgumentParser(description="Parse arguments to pass to GC processing scripts")
     parser.add_argument("-r", "--rundir", type=str, 
                         help='Name of desired GC rundir')
-    parser.add_argument("-s", "--var", type=str,
+    parser.add_argument("-v", "--var", type=str,
                         help="Name of GC variable")
-    parser.add_argument("-v", "--version", type=str,
+    parser.add_argument("-V", "--version", type=str,
                         default='12.9.3',
                         help="Version of GEOS-Chem")
     parser.add_argument("-p", "--pres", type=bool,
@@ -99,9 +99,9 @@ def get_gc_var(rundir, variable, version='12.9.3'):
         t0=(int, re.findall(r'\d+', t0))[1]
         t0=datetime.datetime(int(t0[0]), int(t0[1]), int(t0[2]), int(t0[3]), int(t0[4]), int(t0[5]) )
         for dt in time:
-            rounded_dt = hour_rounder(t0 + datetime.timedelta(minutes=dt))
-            times.append(rounded_dt)
-            #times.append( t0 + datetime.timedelta(minutes=dt) )
+            #rounded_dt = hour_rounder(t0 + datetime.timedelta(minutes=dt))
+            #times.append(rounded_dt)
+            times.append( t0 + datetime.timedelta(minutes=dt) )
         
         if i==0:
             lat=fh.variables['lat'][:]
@@ -140,3 +140,32 @@ def hour_rounder(t):
     # Rounds to nearest hour by adding a timedelta hour if minute >= 30
     return (t.replace(second=0, microsecond=0, minute=0, hour=t.hour)
                                +datetime.timedelta(hours=t.minute//30))
+
+
+def find_timestep(times):
+    """
+    Find the timestep of a GC run
+
+    Parameters
+    -------
+    times (array): Array of datetime objects
+    
+    Returns
+    -------
+    step (str): String indicating timestep, applicable to pandas DataFrame resample function
+    interval (int): X-tick interval in number of days or months
+    """
+    delta = times[1] - times[0]
+    if delta >= datetime.timedelta(days=365):
+        step='Y'
+        interval=12
+    elif datetime.timedelta(days=28) <= delta <= datetime.timedelta(days=31):
+        step='M'
+        interval=2
+    elif delta == datetime.timedelta(days=1):
+        step='D'
+        interval=4
+    elif delta == datetime.timedelta(minutes=60):
+        step='H'
+        interval=2
+    return step, interval
