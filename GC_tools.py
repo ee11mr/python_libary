@@ -15,8 +15,9 @@ import glob
 import re
 import argparse
 import sys
-sys.path.append('/users/mjr583/scratch/python_lib')
+sys.path.append('/users/mjr583/python_lib')
 from CVAO_dict import CVAO_dict as d
+import RowPy as rp
 
 
 def get_arguments():
@@ -169,3 +170,41 @@ def find_timestep(times):
         step='H'
         interval=2
     return step, interval
+
+
+def get_gc_input(time, res='0.25x0.3125'):
+    """
+    Get the number of timesteps in a directory of GC output
+
+    Parameters
+    -------
+    
+    Returns
+    -------
+    """
+    no_fs= res.replace('.', '')
+    metpath='/mnt/lustre/groups/chem-acm-2018/earth0_data/GEOS/ExtData/GEOS_%s/GEOS_FP/%s/%02d/GEOSFP.20170801.I3.%s.nc' % (res,time.year,time.month, no_fs)
+    
+    fh=Dataset(metpath)
+    ps=fh.variables['PS'][int(time.hour / 3)]
+    print(ps.shape) 
+
+    return ps
+
+
+
+
+def closest_met(time):
+    #metsteps=[]
+    #for n in range(0,24,3):
+    #    metsteps.append(datetime.datetime(time.year, time.month, time.day, n, 0))
+    ms=[]
+    for t in time:
+        metsteps=[]
+        for n in range(0,24,3):
+            metsteps.append(datetime.datetime(t.year, t.month, t.day, n, 0))
+        a=min(metsteps, key=lambda d: abs(d - t))
+        ms.append(a)
+
+    a=np.array(ms)
+    return a 
