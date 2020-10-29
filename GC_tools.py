@@ -36,7 +36,7 @@ def get_arguments():
     parser.add_argument("-V", "--version", type=str,
                         default='12.9.3',
                         help="Version of GEOS-Chem")
-    parser.add_argument("-p", "--pres", type=bool,
+    parser.add_argument("-p", "--plot_ps", type=bool,
                         default=False,
                         help="Include pressure isobars in contour plots")
     args=parser.parse_args()
@@ -83,7 +83,6 @@ def get_gc_var(rundir, variable, version='12.9.3'):
     lev (array): Levles of GC run
     times (datetime): Timesteps as datetime objects
     """
-
     gc_var=[] ; times=[]
     for i,infile in enumerate(sorted(glob.glob('/users/mjr583/scratch/GC/%s/%s/output/GEOSChem.SpeciesConc.*.nc4' % (version, rundir)))):
         if variable in d:
@@ -122,6 +121,8 @@ def get_gc_var(rundir, variable, version='12.9.3'):
             var=var*1e9
         elif d[variable]['unit'] == 'pptv':
             var=var*1e12
+    if variable=='ethane':
+        var = var / 2
 
     return var, lat, lon, lev, times
 
@@ -162,7 +163,7 @@ def find_timestep(times):
         interval=12
     elif datetime.timedelta(days=28) <= delta <= datetime.timedelta(days=31):
         step='M'
-        interval=2
+        interval=12
     elif delta == datetime.timedelta(days=1):
         step='D'
         interval=4
@@ -172,7 +173,7 @@ def find_timestep(times):
     return step, interval
 
 
-def get_gc_input(time, res='0.25x0.3125'):
+def get_gc_input(time, var='PS', res='0.25x0.3125'):
     """
     Get the number of timesteps in a directory of GC output
 
@@ -183,28 +184,37 @@ def get_gc_input(time, res='0.25x0.3125'):
     -------
     """
     no_fs= res.replace('.', '')
-    metpath='/mnt/lustre/groups/chem-acm-2018/earth0_data/GEOS/ExtData/GEOS_%s/GEOS_FP/%s/%02d/GEOSFP.20170801.I3.%s.nc' % (res,time.year,time.month, no_fs)
+    metpath='/mnt/lustre/groups/chem-acm-2018/earth0_data/GEOS/ExtData/GEOS_%s/GEOS_FP/%s/%02d/GEOSFP.%s%02d%02d.I3.%s.nc' % (res,time.year,time.month,time.year, time.month,time.day, no_fs)
     
     fh=Dataset(metpath)
-    ps=fh.variables['PS'][int(time.hour / 3)]
-    print(ps.shape) 
+    var=fh.variables[var][int(time.hour / 3)]
+    lat=fh.variables['lat'][:]
+    lon=fh.variables['lon'][:]
 
-    return ps
-
-
+    return var, lat,lon
 
 
 def closest_met(time):
-    #metsteps=[]
-    #for n in range(0,24,3):
-    #    metsteps.append(datetime.datetime(time.year, time.month, time.day, n, 0))
-    ms=[]
-    for t in time:
-        metsteps=[]
-        for n in range(0,24,3):
-            metsteps.append(datetime.datetime(t.year, t.month, t.day, n, 0))
-        a=min(metsteps, key=lambda d: abs(d - t))
-        ms.append(a)
+    """
+    Get the cloest time available for met date for GC output
 
-    a=np.array(ms)
-    return a 
+    Parameters
+    -------
+    time (array): array of datetime objects from GC
+
+    Returns
+    -------
+    metsteps (array): array of datetime objects adjusted to closest available met fiel
+    
+    """
+    ms=[]
+    t=time
+    #for t in time:
+    metsteps=[]
+    for n in range(0,24,3):
+        metsteps.append(datetime.datetime(t.year, t.month, t.day, n, 0))
+    a=min(metsteps, key=lambda d: abs(d - t))
+    ms.append(a)
+
+    metsteps=np.array(ms)
+    return a
