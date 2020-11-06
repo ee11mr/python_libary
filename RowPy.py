@@ -520,9 +520,13 @@ def create_lines(df,savepath='/users/mjr583/scratch/flexpart/postprocess/boxes/p
 
 def create_stacked(df,savepath='./plots/',savenote='',inc_local=True,
                     freq='Y',autopct=False,add='',monthopt=False,dates=False,res='1x1',title=False,boxes=1,colors=False):
-    years=np.arange(df.index[0].year,df.index[-1].year+1,1)
+    try:
+        years=np.arange(df.index[0].year,df.index[-1].year+1,1)
+    except:
+        years=['1900']
     f,ax=create_figure(1,plot='stacked')
     for i in range(len(ax)):
+        print(boxes)
         cm=get_my_cmap(boxes=boxes, inc_local=inc_local,colors=colors)
 
         ncol=int((len(df.columns)+1)/2)     
@@ -575,6 +579,11 @@ def get_my_cmap(boxes=1,inc_local=True, colors=False):
             colors=colors
             cmap_name='my_cmap'
             cm=LinearSegmentedColormap.from_list(cmap_name,colors,N=10)
+    elif boxes=='hat':
+        colors=colors
+        cmap_name='my_cmap'
+        print('here')
+        cm=LinearSegmentedColormap.from_list(cmap_name,colors,N=13)
     return cm
 
 def get_my_colors(boxes=1, inc_local=''):
@@ -728,3 +737,13 @@ def clear_screen():
     """
     os.system('cls' if os.name == 'nt' else 'clear')
     return
+
+
+def timestamp_to_date(times, start=1900 ):
+    new_date=[]
+    for t, tt in enumerate(times):
+        #print(tt)
+        tt=int(tt)
+        x = (datetime.datetime(start,1,1,0,0) + datetime.timedelta(minutes=(tt-1)*60))
+        new_date.append(x)
+    return new_date

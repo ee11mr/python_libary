@@ -39,6 +39,9 @@ def get_arguments():
     parser.add_argument("-p", "--plot_ps", type=bool,
                         default=False,
                         help="Include pressure isobars in contour plots")
+    parser.add_argument("-s", "--strmfunc", type=bool,
+                        default=False,
+                        help="Include stream function plot")
     args=parser.parse_args()
     return args
 
@@ -173,18 +176,25 @@ def find_timestep(times):
     return step, interval
 
 
-def get_gc_input(time, var='PS', res='0.25x0.3125'):
+def get_gc_input(time, filetype='I3',var='PS', res='0.25x0.3125'):
     """
     Get the number of timesteps in a directory of GC output
 
     Parameters
     -------
-    
+    time (datetime): time to get the met input
+    filetype (str): Determines which file to access for desired variable
+    var (str): The netcdf variable name to read
+    res (str): Resolution to read
+
     Returns
     -------
+    var (array): 4d array of variable
+    lat (array): 1d array of latitudes
+    lon (array): 1d array of longitudes
     """
     no_fs= res.replace('.', '')
-    metpath='/mnt/lustre/groups/chem-acm-2018/earth0_data/GEOS/ExtData/GEOS_%s/GEOS_FP/%s/%02d/GEOSFP.%s%02d%02d.I3.%s.nc' % (res,time.year,time.month,time.year, time.month,time.day, no_fs)
+    metpath='/mnt/lustre/groups/chem-acm-2018/earth0_data/GEOS/ExtData/GEOS_%s/GEOS_FP/%s/%02d/GEOSFP.%s%02d%02d.%s.%s.nc' % (res,time.year,time.month,time.year, time.month,time.day, filetype, no_fs)
     
     fh=Dataset(metpath)
     var=fh.variables[var][int(time.hour / 3)]
@@ -194,9 +204,64 @@ def get_gc_input(time, var='PS', res='0.25x0.3125'):
     return var, lat,lon
 
 
+def get_interp_gc_input(ms, time, filetype='I3',var='PS', res='0.25x0.3125'):
+    """
+    Get the number of timesteps in a directory of GC output
+
+    Parameters
+    -------
+    ms (datetime): Time of closest input data
+    time (datetime): Time of model run for which to get the met input
+    filetype (str): Determines which file to access for desired variable
+    var (str): The netcdf variable name to read
+    res (str): Resolution to read
+
+    Returns
+    -------
+    var (array): 4d array of variable
+    lat (array): 1d array of latitudes
+    lon (array): 1d array of longitudes
+    """
+    if ms < time:
+        ms1=ms
+        ms2=ms + datetime.timedelta(hours=3)
+    else:
+        ms2=ms
+        ms1=ms - datetime.timedelta(hours=3)
+
+    no_fs= res.replace('.', '')
+    metpath_1='/mnt/lustre/groups/chem-acm-2018/earth0_data/GEOS/ExtData/GEOS_%s/GEOS_FP/%s/%02d/GEOSFP.%s%02d%02d.%s.%s.nc' % (res,ms1.year,ms1.month,ms.year, ms1.month,ms1.day, filetype, no_fs)
+
+    metpath_2='/mnt/lustre/groups/chem-acm-2018/earth0_data/GEOS/ExtData/GEOS_%s/GEOS_FP/%s/%02d/GEOSFP.%s%02d%02d.%s.%s.nc' % (res,ms2.year,ms2.month,ms2.year, ms2.month,ms2.day, filetype, no_fs)
+
+    fh=Dataset(metpath_1)
+    var1=fh.variables[var][int(ms.hour / 3)]
+
+    fh2=Dataset(metpath_2)
+    var2=fh2.variables[var][int(ms2.hour / 3)]
+    
+    n = (var2 - var1) / 3
+     
+    print(time, ms, ms2)
+    print(var1[0,0,0])
+    print(var2[0,0,0])
+    if  time - ms < ms2 - time:
+        print('Closer to earlier hour')
+        var = var1 + n
+    else:
+        var = var1 +n*2
+    
+    print(var[0,0,0])
+
+    lat=fh.variables['lat'][:]
+    lon=fh.variables['lon'][:]
+
+    return var, lat,lon
+
+
 def closest_met(time):
     """
-    Get the cloest time available for met date for GC output
+    Get the closest time available for met date for GC output
 
     Parameters
     -------
@@ -204,7 +269,7 @@ def closest_met(time):
 
     Returns
     -------
-    metsteps (array): array of datetime objects adjusted to closest available met fiel
+    metsteps (array): array of datetime objects adjusted to closest available met field
     
     """
     ms=[]
@@ -218,3 +283,52 @@ def closest_met(time):
 
     metsteps=np.array(ms)
     return a
+
+
+def dt_difference(a, b):
+    """
+    Gives the time difference between 2 datetime objects in hours
+
+    Parameters
+    -------
+    a (datetime object)
+    b (datetime object)
+
+    Returns
+    -------
+    d (int): difference between a and b in hours
+    
+    """
+    if a > b:
+        d = (a - b).seconds / 3600
+    else:
+        d = (b - a).seconds / 3600
+
+    return d
+
+
+def makeStreamLegend(strm, lx, convertFunc, nlines=5, color='k', fmt='{:g}'):
+    ''' Make a legend for a streamplot on a separate axes instance '''
+    # Get the linewidths from the streamplot LineCollection
+    lws = np.array(strm.lines.get_linewidths())
+    
+    # Turn off axes lines and ticks, and set axis limits
+    lx.axis('off')
+    lx.set_xlim(0, 1)
+    lx.set_ylim(0, 1)
+    
+    # Loop over the desired number of lines in the legend
+    for i, y in enumerate(np.linspace(0.1, 0.9, nlines)):
+        # This linewidth
+        lw = lws.min()+float(i) * lws.ptp()/float(nlines-1)
+        
+        # Plot a line in the legend, of the correct length
+        lx.axhline(y, 0.1, 0.4, c=color, lw=lw)
+        
+        # Add a text label, after converting the lw back to a speed
+        lx.text(0.5, y, fmt.format(convertFunc(lw)), va='center')
+
+
+def LWToSpeed(lw):
+    ''' The inverse of speedToLW, to get the speed back from the linewidth '''
+    return (lw - 0.5) * 5.
