@@ -739,7 +739,7 @@ def clear_screen():
     return
 
 
-def timestamp_to_date(times, start=1900 ):
+def hours_to_datetime(times, start=1900 ):
     new_date=[]
     for t, tt in enumerate(times):
         #print(tt)
@@ -747,3 +747,16 @@ def timestamp_to_date(times, start=1900 ):
         x = (datetime.datetime(start,1,1,0,0) + datetime.timedelta(minutes=(tt-1)*60))
         new_date.append(x)
     return new_date
+
+
+def seconds_to_datetime(times, start=1900 ):
+    new_date=[]
+    for t, tt in enumerate(times):
+        #print(tt)
+        tt=int(tt)
+        x = (datetime.datetime(start,1,1,0,0) + datetime.timedelta(seconds=(tt-1)))
+        new_date.append(x)
+    return new_date
+
+
+

@@ -4,6 +4,8 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('agg')
 from scipy.optimize import curve_fit
 from sklearn.metrics import mean_squared_error, r2_score
 from matplotlib.offsetbox import AnchoredText
@@ -88,6 +90,7 @@ def get_gc_var(rundir, variable, version='12.9.3'):
     """
     gc_var=[] ; times=[]
     for i,infile in enumerate(sorted(glob.glob('/users/mjr583/scratch/GC/%s/%s/output/GEOSChem.SpeciesConc.*.nc4' % (version, rundir)))):
+        print(infile)
         if variable in d:
             gc_name=d[variable]['GC_name']
         else:
@@ -109,7 +112,7 @@ def get_gc_var(rundir, variable, version='12.9.3'):
         if i==0:
             lat=fh.variables['lat'][:]
             lon=fh.variables['lon'][:]
-            lev=fh.variables['lev'][:]
+            lev=fh.variables['hyam'][:]
 
     times=np.array(times)
     var=np.array(gc_var)
@@ -124,10 +127,127 @@ def get_gc_var(rundir, variable, version='12.9.3'):
             var=var*1e9
         elif d[variable]['unit'] == 'pptv':
             var=var*1e12
-    if variable=='ethane':
-        var = var / 2
+    
+    var = var / d[variable]['GC_molratio']
+    #if variable=='ethane':
+    #    var = var / 2
 
     return var, lat, lon, lev, times
+
+
+def plot_all_gc_ems(rundir, version='12.9.3'):
+    """
+    Creates timeseries plot of every variable in the HEMCO_Diagnostic file for a particular run directory 
+
+    Parameters
+    -------
+    Rundir (str): Name of GC rundir to look for output in
+    Version (str): Version of GC used
+    
+    Returns
+    -------
+    """
+    times=[]
+    for infile in sorted(glob.glob('/users/mjr583/scratch/GC/%s/%s/output/HEMCO_diag*.nc' % (version, rundir))):
+        fh=Dataset(infile)
+        time=fh.variables['time'][:]
+        lat=fh.variables['lat'][:]
+        lon=fh.variables['lon'][:]
+        lev=fh.variables['lev'][:]
+        AREA=fh.variables['AREA'][:]
+
+        t0=fh.variables['time'].units
+        t0=(int, re.findall(r'\d+', t0))[1]
+        t0=datetime.datetime(int(t0[0]), int(t0[1]), int(t0[2]), int(t0[3]), int(t0[4]), int(t0[5]) )
+        for dt in time:
+            times.append( t0 + datetime.timedelta(minutes=dt) )
+    
+    times=np.array(times)
+    lat=fh.variables['lat'][:]
+    lon=fh.variables['lon'][:]
+    lev=fh.variables['lev'][:]
+    
+    names=list(fh.variables.keys())
+    for var in names[8:]:  
+        print(var)
+        mw=False
+        if 'sCH4_' in var:
+            mw = 16.04
+        elif 'sCO_' in var:
+            mw = 28.01
+        elif 'sNO_' in var:
+            mw=30.01
+        elif 'sNO2_' in var:
+            mw=46.0055
+        elif 'sNH3_' in var:
+            mw=17.031
+        elif 'sBENZ_' in var:
+            mw=78.11
+        elif 'sHNO2_' in var:
+            mw=47.013
+        elif 'sC2H6_' in var:
+            mw=30.07
+        elif 'sC3H8_' in var:
+            mw=44.10
+        elif 'sACET_' in var:
+            mw=58.08
+        elif 'sO3_' in var:
+            mw=48.00
+        elif 'sPRPE_' in var:
+            mw=42.08
+        elif 'sSO2_' in var:
+            mw=64.066
+        elif 'sSO4_' in var:
+            mw=96.06
+        elif 'sTOLU_' in var:
+            mw=92.14
+        gc_em=[]
+        for i,infile in enumerate(sorted(glob.glob('/users/mjr583/scratch/GC/%s/%s/output/HEMCO_diag*.nc' % (version, rundir)))):
+            fh=Dataset(infile)
+            em=fh.variables[var]
+            unit=em.units
+            long_name=em.long_name
+
+            em=np.array(np.squeeze(em[:]))
+
+            if mw:
+                unit='Tg'
+                if len(em.shape) == 3:  ## Convert from molc/cm-3 to Tg
+                    hold_em=[]
+                    for i in range(47):
+                        x = em[i] * AREA * 10
+                        hold_em.append( x * mw * (86400 * 30 ) * 1e-12)
+                    em=np.array(hold_em)
+                else:
+                    x = em * AREA * 10
+                    em =  x * mw * (86400 * 30 ) * 1e-12
+            gc_em.append(em)
+         
+        ems=np.array(gc_em)
+        if ems.ndim == 4:
+            ems=np.sum(np.sum(ems[:,0,:,:],1),1)
+        elif ems.ndim == 3:
+            ems=np.sum(np.sum(ems,1),1)
+        else: # This shouldn't happen
+            print('What now?')
+            sys.exit()
+    
+        f,ax= plt.subplots(figsize=(12,4))
+        ax.plot(times, ems, 'orchid', label=long_name)
+        plt.ylabel(unit)
+        plt.legend()
+        plt.savefig('/users/mjr583/scratch/GC/%s/%s/emissions/%s.png' % (version, rundir, long_name) )
+        plt.close()
+
+        f,ax= plt.subplots(figsize=(12,4))
+        ax.plot(ems[2:14], 'orchid', label='2008')
+        ax.plot(ems[-12:], 'aqua', label='2019')
+        plt.title(long_name)
+        plt.ylabel(unit)
+        plt.legend()
+        plt.savefig('/users/mjr583/scratch/GC/%s/%s/emissions/%s_2008-2019.png' % (version, rundir, long_name) )
+        plt.close()
+    return
 
 
 def hour_rounder(t):
