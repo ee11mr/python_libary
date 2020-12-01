@@ -518,7 +518,7 @@ def create_lines(df,savepath='/users/mjr583/scratch/flexpart/postprocess/boxes/p
     return
 
 
-def create_stacked(df,savepath='./plots/',savenote='',inc_local=True,
+def create_stacked(df,savepath='./plots/',inc_local=True,site='cvao',
                     freq='Y',autopct=False,add='',monthopt=False,dates=False,res='1x1',title=False,boxes=1,colors=False):
     try:
         years=np.arange(df.index[0].year,df.index[-1].year+1,1)
@@ -554,7 +554,7 @@ def create_stacked(df,savepath='./plots/',savenote='',inc_local=True,
         plt.title(title)
     plt.ylabel('%')
     plt.xlabel('')
-    save_plot(savepath,years,savenote,plot='stacked', inc_local=inc_local,add=add,monthopt=monthopt,dates=dates,res=res)
+    save_plot(savepath,years,site=site,plot='stacked', inc_local=inc_local,add=add,monthopt=monthopt,dates=dates,res=res)
     return
 
 
@@ -599,7 +599,7 @@ def get_my_colors(boxes=1, inc_local=''):
     return colors
 
 
-def save_plot(savepath, years, savenote, plot='',inc_local='',add='',monthopt=False,dates=False,res='1x1'):
+def save_plot(savepath, years, site=False, plot='',inc_local='',add='',monthopt=False,dates=False,res='1x1'):
     if plot=='traj':
         if len(years)==1:
             time=years[0][:2]+years[0][-4:]
@@ -635,8 +635,8 @@ def save_plot(savepath, years, savenote, plot='',inc_local='',add='',monthopt=Fa
         if add != '':
             year_string=year_string+'_'+str(add)
 
-        if savenote != '':
-            plt.savefig(savepath+plot+'_'+year_string+'_'+savenote+suff)
+        if site:
+            plt.savefig(savepath+plot+'_'+year_string+'_'+site+suff)
         else:
             plt.savefig(savepath+plot+'_'+year_string+suff)
     return

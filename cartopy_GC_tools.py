@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('agg')
 from scipy.optimize import curve_fit
-from sklearn.metrics import mean_squared_error, r2_score
 from matplotlib.offsetbox import AnchoredText
 import netCDF4
 from netCDF4 import Dataset
@@ -20,7 +19,7 @@ import argparse
 import sys
 sys.path.append('/users/mjr583/python_lib')
 from CVAO_dict import CVAO_dict as d
-import RowPy as rp
+#import RowPy as rp
 
 
 def get_arguments():
@@ -71,7 +70,7 @@ def get_n_timesteps(rundir, version='12.9.3'):
     return nt
 
 
-def get_gc_var(rundir, variable, version='12.9.3', year=None):
+def get_gc_var(rundir, variable, version='12.9.3'):
     """
     Get the number of timesteps in a directory of GC output
 
@@ -80,7 +79,6 @@ def get_gc_var(rundir, variable, version='12.9.3', year=None):
     Rundir (str): Name of GC rundir to look for output in
     Variable (str): Name of GC variable to process
     Version (str): Version of GC used
-    year (str): Option to read output only for particular year
     
     Returns
     -------
@@ -91,9 +89,7 @@ def get_gc_var(rundir, variable, version='12.9.3', year=None):
     times (datetime): Timesteps as datetime objects
     """
     gc_var=[] ; times=[]
-    if year==None:
-        year=''
-    for i,infile in enumerate(sorted(glob.glob('/users/mjr583/scratch/GC/%s/%s/output/GEOSChem.SpeciesConc.*%s*.nc4' % (version, rundir, year)))):
+    for i,infile in enumerate(sorted(glob.glob('/users/mjr583/scratch/GC/%s/%s/output/GEOSChem.SpeciesConc.*.nc4' % (version, rundir)))):
         print(infile)
         if variable in d:
             gc_name=d[variable]['GC_name']
@@ -442,3 +438,38 @@ def makeStreamLegend(strm, lx, convertFunc, nlines=5, color='k', fmt='{:g}'):
 def LWToSpeed(lw):
     ''' The inverse of speedToLW, to get the speed back from the linewidth '''
     return (lw - 0.5) * 5.
+
+
+
+def get_all_gc_input(times, filetype='I3',var='PS', res='0.25x0.3125'):
+    """
+    Get met fields for given time range
+
+    Parameters
+    -------
+    time (datetime): time to get the met input
+    filetype (str): Determines which file to access for desired variable
+    var (str): The netcdf variable name to read
+    res (str): Resolution to read
+
+    Returns
+    -------
+    var (array): 4d array of variable
+    lat (array): 1d array of latitudes
+    lon (array): 1d array of longitudes
+    """
+    no_fs= res.replace('.', '')
+    all_var=[]
+    for time in times:
+        metpath='/mnt/lustre/groups/chem-acm-2018/earth0_data/GEOS/ExtData/GEOS_%s/GEOS_FP/%s/%02d/GEOSFP.%s%02d%02d.%s.%s.nc' %                (res,time.year,time.month,time.year, time.month,time.day, filetype, no_fs)
+        print(metpath) 
+        fh=Dataset(metpath)
+        metvar=fh.variables[var][:]#int(time.hour / 3)]
+        metvar=np.sum(metvar,0)
+        all_var.append(metvar)
+    metvar=np.array(all_var)
+
+    lat=fh.variables['lat'][:]
+    lon=fh.variables['lon'][:]
+
+    return metvar, lat,lon
