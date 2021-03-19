@@ -17,9 +17,11 @@ import glob
 import re
 import calendar
 import argparse
+import xarray as xr
 import sys
 sys.path.append('/users/mjr583/python_lib')
 from CVAO_dict import CVAO_dict as d
+from CVAO_dict import GC_dict as g
 import RowPy as rp
 
 
@@ -63,7 +65,7 @@ def get_n_timesteps(rundir, version='12.9.3'):
     nt (int): Number of timesteps in output directory
     """
     nt=0
-    for infile in sorted(glob.glob('/users/mjr583/scratch/GC/%s/%s/output/GEOSChem.SpeciesConc.*.nc4' % (version, rundir))):
+    for infile in sorted(glob.glob('/users/mjr583/scratch/GC/%s/rundirs/%s/OutputDir/GEOSChem.SpeciesConc.*.nc4' % (version, rundir))):
         fh=Dataset(infile)
         t=len(fh.variables['time'][:])
         nt+=t
@@ -90,18 +92,27 @@ def get_gc_var(rundir, variable, version='12.9.3', year=None):
     lev (array): Levles of GC run
     times (datetime): Timesteps as datetime objects
     """
+    global d
+
     gc_var=[] ; times=[]
     if year==None:
         year=''
-    for i,infile in enumerate(sorted(glob.glob('/users/mjr583/scratch/GC/%s/%s/output/GEOSChem.SpeciesConc.*%s*.nc4' % (version, rundir, year)))):
+    for i,infile in enumerate(sorted(glob.glob('/users/mjr583/scratch/GC/%s/rundirs/%s/OutputDir/GEOSChem.SpeciesConc.*%s*.nc4' % (version, rundir, year)))):
         print(infile)
         if variable in d:
             gc_name=d[variable]['GC_name']
+        elif variable in g:
+            d=g
+            gc_name=d[variable]['GC_name']
         else:
             gc_name=variable
+        
+        try:
+            fh=Dataset(infile)        
+            var=fh.variables['SpeciesConc_%s' %gc_name][:]
+        except:
+            continue
 
-        fh=Dataset(infile)
-        var=fh.variables['SpeciesConc_%s' %gc_name][:]
         gc_var.append(var)
         
         time=fh.variables['time'][:]
@@ -135,14 +146,49 @@ def get_gc_var(rundir, variable, version='12.9.3', year=None):
         elif d[variable]['unit'] == 'pptv':
             var=var*1e12
     
-    var = var / d[variable]['GC_molratio']
+    if '12' in version:
+        var = var / d[variable]['GC_molratio']
     #if variable=='ethane':
     #    var = var / 2
 
     return var, lat, lon, lev, times
 
 
-def plot_all_gc_ems(rundir, variable=None,version='12.9.3'):
+def HEMCO_Diag_read(rundir, version='12.9.3', variable='', year=False):
+    times=[] ; ems=[]
+    if year:
+        filein = '/users/mjr583/scratch/GC/%s/rundirs/%s/OutputDir/HEMCO_diag*%s*.nc' % (version, rundir, year) 
+    else:
+        filein = '/users/mjr583/scratch/GC/%s/rundirs/%s/OutputDir/HEMCO_diag*.nc' % (version, rundir)
+    for infile in sorted(glob.glob(filein)):
+        #print(infile)
+        try:
+            fh=Dataset(infile)
+        except:
+            continue
+        time=fh.variables['time'][:]
+        t0=fh.variables['time'].units
+        t0=(int, re.findall(r'\d+', t0))[1]
+        t0=datetime.datetime(int(t0[0]), int(t0[1]), int(t0[2]), int(t0[3]), int(t0[4]), int(t0[5]) )
+        for dt in time:
+            times.append( t0 + datetime.timedelta(minutes=dt) )
+
+        emission=fh.variables[variable][:]
+        #print(emission.shape)
+        ems.append(emission)
+
+    lat=fh.variables['lat'][:]
+    lon=fh.variables['lon'][:]
+    lev=fh.variables['lev'][:]
+    area=fh.variables['AREA'][:]
+    ems=np.concatenate(ems)
+    unit=fh.variables[variable].units
+    #print(ems.shape)
+    var_list=list(fh.variables.keys())[8:]
+    
+    return ems, times, lat, lon, lev, area, var_list, unit
+
+def plot_all_gc_ems(rundir, variable=None,version='12.9.3',plot=False, year=''):
     """
     Creates timeseries plot of every variable in the HEMCO_Diagnostic file for a particular run directory 
 
@@ -157,10 +203,14 @@ def plot_all_gc_ems(rundir, variable=None,version='12.9.3'):
     if rundir == None:
         sys.exit('Please give the run directory')
     times=[]
-    for infile in sorted(glob.glob('/users/mjr583/scratch/GC/%s/%s/output/HEMCO_diag*.nc' % (version, rundir))):
-        fh=Dataset(infile)
+    for infile in sorted(glob.glob('/users/mjr583/scratch/GC/%s/rundirs/%s/OutputDir/HEMCO_diag*.nc' % (version, rundir))):
+        try:
+            fh=Dataset(infile)
+        except:
+            continue
         time=fh.variables['time'][:]
         lat=fh.variables['lat'][:]
+
         lon=fh.variables['lon'][:]
         lev=fh.variables['lev'][:]
         AREA=fh.variables['AREA'][:]
@@ -177,7 +227,7 @@ def plot_all_gc_ems(rundir, variable=None,version='12.9.3'):
     lev=fh.variables['lev'][:]
     
     names=list(fh.variables.keys())[8:]
-    names = [s for s in names if "Anthro" in s]
+    names = [s for s in names if "BioBurn" in s]
     print(names)
     if variable != None:
         names= [s for s in names if variable+'_' in s]
@@ -185,7 +235,7 @@ def plot_all_gc_ems(rundir, variable=None,version='12.9.3'):
         print(var)
         mw=False
         gc_em=[]
-        for i,infile in enumerate(sorted(glob.glob('/users/mjr583/scratch/GC/%s/%s/output/HEMCO_diag*.nc' % (version, rundir)))):
+        for i,infile in enumerate(sorted(glob.glob('/users/mjr583/scratch/GC/%s/rundirs/%s/OutputDir/HEMCO_diag*%s*.nc' % (version, rundir, year)))):
             fh=Dataset(infile)
             em=fh.variables[var]
             unit=em.units
@@ -214,27 +264,31 @@ def plot_all_gc_ems(rundir, variable=None,version='12.9.3'):
         elif ems.ndim == 3:
             ems=np.sum(np.sum(ems,1),1)
         else: # This shouldn't happen
+            print(ems)
             print('What now?')
             sys.exit()
         df=pd.DataFrame({'Value':ems}, index=times)
         print('Annual total =', df.groupby(df.index.year).sum())
+        
+        if plot:
+            f,ax= plt.subplots(figsize=(12,4))
+            ax.plot(times, ems, 'orchid', label=long_name)
+            plt.ylabel(unit)
+            plt.legend()
+            plt.savefig('/users/mjr583/scratch/GC/%s/%s/emissions/%s.png' % (version, rundir, long_name) )
+            plt.close()
 
-        f,ax= plt.subplots(figsize=(12,4))
-        ax.plot(times, ems, 'orchid', label=long_name)
-        plt.ylabel(unit)
-        plt.legend()
-        plt.savefig('/users/mjr583/scratch/GC/%s/%s/emissions/%s.png' % (version, rundir, long_name) )
-        plt.close()
-
-        f,ax= plt.subplots(figsize=(12,4))
-        ax.plot(ems[2:14], 'orchid', label='2008')
-        ax.plot(ems[-12:], 'aqua', label='2019')
-        plt.title(long_name)
-        plt.ylabel(unit)
-        plt.legend()
-        plt.savefig('/users/mjr583/scratch/GC/%s/%s/emissions/%s_2008-2019.png' % (version, rundir, long_name) )
-        plt.close()
-    return
+            f,ax= plt.subplots(figsize=(12,4))
+            ax.plot(ems[2:14], 'orchid', label='2008')
+            ax.plot(ems[-12:], 'aqua', label='2019')
+            plt.title(long_name)
+            plt.ylabel(unit)
+            plt.legend()
+            plt.savefig('/users/mjr583/scratch/GC/%s/%s/emissions/%s_2008-2019.png' % (version, rundir, long_name) )
+            plt.close()
+            return
+        else:
+            return df,ems
 
 
 def hour_rounder(t):
@@ -442,3 +496,236 @@ def makeStreamLegend(strm, lx, convertFunc, nlines=5, color='k', fmt='{:g}'):
 def LWToSpeed(lw):
     ''' The inverse of speedToLW, to get the speed back from the linewidth '''
     return (lw - 0.5) * 5.
+
+
+def gc_var_to_csv(rundir, variables=[], year='', version='12.9.3'):
+    
+    print(variables)
+
+    gc_var=[] ; times=[]
+    for i,infile in enumerate(sorted(glob.glob('/users/mjr583/scratch/GC/%s/%s/output/GEOSChem.SpeciesConc.*%s*.nc4' % (version, rundir, year)))):
+        print(infile)
+    
+        for gc_name in variables:
+            if gc_name in d:
+                gc_name=d[variable]['GC_name']
+            
+            fh=Dataset(infile)
+            var=fh.variables['SpeciesConc_%s' %gc_name][:]
+            gc_var.append(var)
+        
+
+            
+
+
+        time=fh.variables['time'][:]
+        t0=fh.variables['time'].units
+        t0=(int, re.findall(r'\d+', t0))[1]
+        t0=datetime.datetime(int(t0[0]), int(t0[1]), int(t0[2]), int(t0[3]), int(t0[4]), int(t0[5]) )
+        for dt in time:
+            #rounded_dt = hour_rounder(t0 + datetime.timedelta(minutes=dt))
+            #times.append(rounded_dt)
+            times.append( t0 + datetime.timedelta(minutes=dt) )
+        
+        if i==0:
+            lat=fh.variables['lat'][:]
+            lon=fh.variables['lon'][:]
+            lev=fh.variables['hyam'][:]
+
+    times=np.array(times)
+
+
+def get_gc_bc(rundir, var, version='12.9.3'):
+    print('here')
+    CO=[] ; times=[]
+    for infile in sorted(glob.glob('/users/mjr583/scratch/GC/%s/rundirs/%s/GC_BC/GEOSChem.Boundary*201708*.nc4' %(version, rundir))):
+        print(infile)
+        fh=Dataset(infile)
+        lat=fh.variables['lat'][:]
+        lon=fh.variables['lon'][:]
+        lev=fh.variables['hyam'][:]
+
+        co = fh.variables['SpeciesBC_%s' %var][:]*1e9
+        CO.append(co)
+        time=fh.variables['time']
+        times.append( GC_time_to_datetime(fh, time) ) 
+    var=np.concatenate(CO)
+
+    return var, lat, lon, lev, time
+
+
+def GC_time_to_datetime(fh,time):
+    t0=fh.variables['time'].units
+    t0=(int, re.findall(r'\d+', t0))[1]
+    t0=datetime.datetime(int(t0[0]), int(t0[1]), int(t0[2]), int(t0[3]), int(t0[4]), int(t0[5]) )
+    times=[]
+    for dt in time[:]:
+        times.append( t0 + datetime.timedelta(minutes=dt) )
+    times=np.array(times)
+    return times
+
+
+def get_var_group(d, rundir, version, year=False):
+    #key=list(d.keys())
+
+    variable=[] ; times=[]
+    if year:
+        path='/users/mjr583/scratch/GC/%s/rundirs/%s/OutputDir/GEOSChem.SpeciesConc.*%s*.nc4' % (version, rundir, year)
+    else:
+        path='/users/mjr583/scratch/GC/%s/rundirs/%s/OutputDir/GEOSChem.SpeciesConc.*.nc4' % (version, rundir)
+
+    for i,infile in enumerate(sorted(glob.glob(path))):
+        print(infile)
+        fh=Dataset(infile)
+        var=fh.variables['SpeciesConc_%s' %d['comp'][0]][:]
+        
+        for i,ii in enumerate(d['comp'][1:]):
+            var+= ( fh.variables['SpeciesConc_%s' %ii][:] ) * d['sf'][i]
+        variable.append(var)
+        
+        time=fh.variables['time'][:]
+        t0=fh.variables['time'].units
+        t0=(int, re.findall(r'\d+', t0))[1]
+        t0=datetime.datetime(int(t0[0]), int(t0[1]), int(t0[2]), int(t0[3]), int(t0[4]), int(t0[5]) )
+        for dt in time:
+            times.append( t0 + datetime.timedelta(minutes=dt) )
+        
+        lat=fh.variables['lat'][:]
+        lon=fh.variables['lon'][:]
+        lev=fh.variables['hyam'][:]
+
+    try:
+        var=np.array(variable)
+        SHAPE=var.shape
+        var=np.reshape(var, (SHAPE[0]*SHAPE[1], SHAPE[2], SHAPE[3], SHAPE[4]))
+        var=np.array(var)
+    except:
+        var=np.concatenate(variable)
+
+    var = var * d['conv']
+
+    return var, lat, lon, lev, times
+ 
+
+def read_collection(data_dir, collection):
+    """
+    Reads data from all of specified collection netCDF files
+    into a single xarray Dataset.
+
+    Args:
+    -----
+        data_dir : str
+            Directory containing data files.
+            Default: "./OutputDir".
+
+    Returns:
+    --------
+        ds : xarray Dataset
+    """
+
+    # Find a list of all MeanOH collection files in data_dir.
+    # Walk through subdirectories of data_dir if they exist.
+    path='/users/mjr583/scratch/GC/GEOS-Chem/rundirs/'
+    data_dir = path+data_dir+"/OutputDir"
+    file_list = []
+    for root, dirs, files in os.walk(data_dir):
+        if len(dirs) > 0:
+            for d in dirs:
+                for f in files:
+                    if ".%s." %collection in f:
+                        file_list.append(os.path.join(root, d, f))
+        else:
+            for f in files:
+                if ".%s." %collection in f:
+                    file_list.append(os.path.join(root, f))
+    # Combine data into a single dataset
+    # Exit if we do not have all necessary metrics variables
+    ds = combine_dataset(file_list)
+
+    return ds
+
+
+def combine_dataset(file_list=None):
+    """
+    Wrapper for xarray.open_mfdataset, taking into account the
+    extra arguments needed in xarray 0.15 and later.
+
+    Args:
+    -----
+        file_list : list of str
+
+    Returns:
+    --------
+        ds : xarray Dataset
+    """
+
+    # netCDF variables that we should skip reading
+    # (These are from older versions of GCHP output)
+    skip_these_vars = ["anchor",
+                       "ncontact",
+                       "orientation",
+                       "contacts",
+                       "cubed_sphere"]
+
+    # Return a single Dataset containing data from all MeanOH files.
+    # NOTE: Need to add combine="nested" and concat_dim="time"
+    # for xarray 0.15 and higher!!!
+    v = xr.__version__.split(".")
+    if int(v[0]) == 0 and int(v[1]) >= 15:
+        try:
+            ds = xr.open_mfdataset(
+                file_list,
+                drop_variables=skip_these_vars,
+                combine="nested",
+                concat_dim="time"
+            )
+        except FileNotFoundError:
+            msg = "Could not find one or more files in {}".format(file_list)
+            raise FileNotFoundError(msg)
+    else:
+        try:
+            ds = xr.open_mfdataset(
+                file_list,
+                drop_variables=skip_these_vars
+            )
+        except FileNotFoundError:
+            msg = "Could not find one or more files in {}".format(file_list)
+            raise FileNotFoundError(msg)
+
+    return ds
+
+
+### DICTIONARIES ####
+
+Iy = { 'name' : 'Iy',
+        'abbr' : '$I_y$',
+        'comp' : ['I2', 'HOI','IO','OIO','HI','INO','I2O2','I2O3','I2O4'],
+        'sf' : [2,1,1,1,1,1,2,2,2],
+        'conv' : 1e12,
+        'unit' : 'ppt'
+        }
+
+Bry = { 'name' : 'Bry',
+        'abbr' : '$Br_y$',
+        'comp' : ['Br', 'Br2','HOBr','BrO','HBr','BrNO2','BrNO3','IBr','BrCl'],
+        'sf' : [1,2,1,1,1,1,1,1,1],
+        'conv' : 1e12,
+        'unit' : 'ppt'
+        }
+
+Cly = { 'name' : 'Cly',
+        'abbr' : '$Cl_y$',
+        'comp' : ['Cl','Cl2','HOCl','ClO','HCl','ClNO2','ClNO3','ICl','BrCl','ClOO','OClO','Cl2O2'],
+        'sf' : [1,2,1,1,1,1,1,1,1,1,1,2],
+        'conv' : 1e12,
+        'unit' : 'ppt'
+        }
+
+NOx = { 'name' : 'NOx',
+        'abbr' : '$NO_x$',
+        'comp' : ['NO', 'NO2'],
+        'sf' : [1,1],
+        'conv' : 1e12,
+        'unit' : 'ppt'
+        }
+

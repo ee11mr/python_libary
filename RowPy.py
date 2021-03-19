@@ -1,3 +1,4 @@
+#!/usr/bin/env python -W ignore::DeprecationWarning
 '''
 This file contains python functions that can be used to process, 
 interpret, analyse and plot data from the Cape Verde Atmospheric 
@@ -759,4 +760,141 @@ def seconds_to_datetime(times, start=1900 ):
     return new_date
 
 
+def get_abs_max_min(x):
+    if x.max() > abs(x.min()):
+        Max = x.max()
+    else:
+        Max= abs(x.min())
 
+    Min=-(Max)
+
+    return Min, Max
+
+
+
+def timeseries_plot(dfs, variable, cvao_data=True, std=False, resample=False,HEMCO=False, unit=False):
+    from CVAO_dict import CVAO_dict as d
+    colors=['g','r','b','y']       
+    
+    f,ax= plt.subplots(figsize=(12,4))
+    
+    if std == False:
+        for n,df in enumerate(dfs):
+            if resample != False:
+                df=df.resample(resample).mean()
+            ax.plot(df.index, df, color=colors[n],label=df.columns[0])
+        if cvao_data:
+            df=CV.get_from_merge(d[variable])
+            df=df[dfs[0].index[0]:dfs[0].index[-1]]
+            df=df.resample('D').mean()
+            if resample != False:
+                df=df.resample(resample).mean()
+            ax.plot(df.index, df.Value, 'k', label='CVAO')
+
+    elif std==True:
+        for n,df in enumerate(dfs):
+            mean=df.resample('M').mean()
+            df75=df.resample('M').quantile(.75)
+            df25=df.resample('M').quantile(.25)
+
+            ax.fill_between(mean.index, df25[df.columns[0]],df75[df.columns[0]], color=colors[n], alpha=.3)
+            ax.plot(mean.index, mean, color=colors[n],label=df.columns[0])
+        if cvao_data:
+            df=CV.get_from_merge(d[variable])
+            df=df[dfs[0].index[0]:dfs[0].index[-1]]
+            mean=df.resample('M').mean()
+            df75=df.resample('M').quantile(.75)
+            df25=df.resample('M').quantile(.25)
+                
+            ax.fill_between(mean.index, df25[df.columns[0]],df75[df.columns[0]],color='grey', alpha=.3)
+            ax.plot(mean.index, mean, 'k', label='CVAO')
+
+    if HEMCO:
+        plt.ylabel(unit )
+    else:
+        plt.ylabel('%s (%s)' % (d[variable]['abbr'], d[variable]['unit']) )
+    plt.gca().xaxis.set_major_locator(mdates.MonthLocator(interval=2))
+    plt.legend()
+    if HEMCO:
+        plt.savefig('./HEMCO_plots/timeseries_%s.png' %variable )
+    elif std:
+        plt.savefig('./plots/timeseries_v13_%s_std.png' %variable )
+    else:
+        plt.savefig('./plots/timeseries_v13_%s.png' %variable )
+
+    return
+
+def get_GC_cmap():
+    import matplotlib.colors as mcolors
+    rgb_WhGrYlRd = np.genfromtxt('/users/mjr583/python_lib/colormaps/WhGrYlRd.txt',
+                                     delimiter=' ')
+    WhGrYlRd = mcolors.ListedColormap(rgb_WhGrYlRd/255.0)
+    cmap=WhGrYlRd
+    return cmap
+
+
+def difference_map(a,b,variable,lon, lat, labels=['a','b','c'], pc=False, HEMCO=False, unit=False):
+    from CVAO_dict import CVAO_dict as d
+    cmap=get_GC_cmap()
+
+    if pc:
+        c = - (100 - ( a / b) * 100 )
+        xlabel='%'
+    else:
+        if HEMCO:
+            c = a - b
+            xlabel=unit
+        else:
+            c = a-b
+            xlabel=('%s (%s)' %(variable, d[variable]['unit']))
+
+    Min, Max = get_abs_max_min(c)
+
+    fig,(ax1, ax2, ax3)= plt.subplots(1,3,figsize=(12,3))
+    X,Y=np.meshgrid(lon,lat)
+    m1=get_basemap(ax=ax1, lines=False, freq=60.)
+    m2=get_basemap(ax=ax2, lines=False, freq=60.)
+    m3=get_basemap(ax=ax3, lines=False, freq=60.)
+
+    MAX=np.nanmax(a)
+    if variable == 'NO' or variable == 'NO2':
+        from matplotlib.colors import LogNorm
+
+        im=ax1.pcolormesh(X,Y, a,  cmap=cmap, vmax=MAX, norm=LogNorm() )
+        im2=ax2.pcolormesh(X,Y, b,  cmap=cmap, vmax=MAX, norm=LogNorm())
+        im3=ax3.pcolormesh(X,Y, c,  cmap='bwr', vmin=Min, vmax=Max)
+
+    else:
+        im=ax1.pcolormesh(X,Y, a,  cmap=cmap, vmax=MAX)
+        im2=ax2.pcolormesh(X,Y, b,  cmap=cmap, vmax=MAX)
+        im3=ax3.pcolormesh(X,Y, c,  cmap='bwr', vmin=Min, vmax=Max)
+
+    ax1.set_title(labels[0])
+    ax2.set_title(labels[1])
+    ax3.set_title(labels[2])
+
+    plt.subplots_adjust(bottom=0.24)
+    cbar_ax = fig.add_axes([0.126, 0.15, 0.502, 0.07])
+    fig.colorbar(im, cax=cbar_ax, orientation='horizontal')
+    if not HEMCO:
+        cbar_ax.set_xlabel('%s (%s)' %(variable, d[variable]['unit']))
+    else:
+        cbar_ax.set_xlabel(unit)
+
+
+    cbar_ax = fig.add_axes([0.673,0.15,0.225, 0.07])
+    fig.colorbar(im3, cax=cbar_ax, orientation='horizontal')
+    cbar_ax.set_xlabel(xlabel)#'%s (%s)' %(variable, d[variable]['unit']))
+
+    plt.suptitle('Annual mean: SpeciesConc_%s ' %variable)
+    
+    if HEMCO:
+        if pc:
+            plt.savefig('HEMCO_plots/%s_percentage.png' %variable) 
+        else:
+            plt.savefig('HEMCO_plots/%s.png' %variable) 
+    elif pc:
+        plt.savefig('plots/difference_map_%s_percentage.png' %variable) 
+    else:
+        plt.savefig('plots/difference_map_%s.png' %variable) 
+    plt.close()

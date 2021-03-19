@@ -20,7 +20,6 @@ import glob
 def get_from_merge(d, timestep=False):
     filepath  = '/users/mjr583/scratch/NCAS_CVAO/CVAO_datasets/'
     filen = glob.glob(filepath+'*erge.csv')[0]
-    #print(filen)
     dtf = pd.read_csv(filen, index_col=0,dtype={'Airmass':str, 'New_Airmass':str})
     try:
         dtf.index = pd.to_datetime(dtf.index,format='%d/%m/%Y %H:%M')
@@ -65,9 +64,9 @@ def get_from_merge(d, timestep=False):
 
 def get_dataset_from_merge(d, timestep='M', ):
     filepath  = '/users/mjr583/scratch/NCAS_CVAO/CVAO_datasets/'
-    filen = filepath+'20200710_CV_Merge.csv'
+    filen = filepath+'20200908_CV_Merge.csv'
     dtf = pd.read_csv(filen, index_col=0,dtype={'Airmass':str, 'New_Airmass':str})
-    dtf.index = pd.to_datetime(dtf.index,format='%d/%m/%Y %H:%M')
+    dtf.index = pd.to_datetime(dtf.index,format='%Y-%m-%d %H:%M:%S')
 
     filen=filepath+'cv_ovocs_2018_M_Rowlinson.csv'
     odf = pd.read_csv(filen, index_col=0)
@@ -86,7 +85,7 @@ def get_dataset_from_merge(d, timestep='M', ):
     df=dtf.resample('H').mean()
     odf=odf.resample('H').mean()
     dtf=pd.concat([df,odf], axis=1, sort=False)
-    dtf = dtf[d['merge_pref']+d['variable']+d['merge_suff']]
+    dtf = dtf[d['merge_name']]
     dtf = pd.DataFrame(dtf)
     dtf.columns = [d['variable']]
 
@@ -97,7 +96,7 @@ def get_dataset_from_merge(d, timestep='M', ):
 
 def get_met_data_from_merge(d, timestep='M'):
     filepath  = '/users/mjr583/scratch/NCAS_CVAO/CVAO_datasets/'
-    filen = filepath+'20200710_CV_Merge.csv'
+    filen = filepath+'20200908_CV_Merge.csv'
     dtf = pd.read_csv(filen, index_col=0,dtype={'Airmass':str, 'New_Airmass':str})
     dtf.index = pd.to_datetime(dtf.index,format='%d/%m/%Y %H:%M')
     
@@ -244,6 +243,7 @@ def curve_fit_function(df,X,Y, start, timestep='monthly'):
         for i in range(n):
             y[i] = re_func(X[i],c[0],c[1],c[2],c[3],c[4],c[5],c[6],c[7],c[8],c[9],c[10])
     else:
+        print(timestep)
         raise Exception('Invalid timestep argument, must be daily ("D") or monthly ("M")')
     var = c[0] + c[1]*X + c[2]*X**2
     rmse = np.round(np.sqrt(mean_squared_error(Y,re_func( X, *c))),2)
@@ -459,7 +459,7 @@ def remove_nan_rows(df,times):
 
     Parameters
     ----------
-    df (array): Variable dataset
+    df (array): Pandas DataFrame - Variable dataset
     times (array): Index/timestep for df
 
     Returns
@@ -539,8 +539,8 @@ def plot_trend_with_func_from_dict(d, timestep='M', force_merge=False,\
         elif force_merge== True:
             df, time = get_dataset_from_merge(d[i], timestep=timestep)
             start, end, years = get_start_year_merge(df) 
-            
-        X, Y, time = remove_nan_rows(df[i], time)
+        print(type(df))
+        X, Y, time = remove_nan_rows(df, time)
         if X.size == 0:
             print('No values for ', df.columns[0])
             pass

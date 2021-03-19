@@ -462,11 +462,12 @@ def get_all_gc_input(times, filetype='I3',var='PS', res='0.25x0.3125'):
     all_var=[]
     for time in times:
         metpath='/mnt/lustre/groups/chem-acm-2018/earth0_data/GEOS/ExtData/GEOS_%s/GEOS_FP/%s/%02d/GEOSFP.%s%02d%02d.%s.%s.nc' %                (res,time.year,time.month,time.year, time.month,time.day, filetype, no_fs)
-        print(metpath) 
+        print(metpath)
         fh=Dataset(metpath)
         metvar=fh.variables[var][:]#int(time.hour / 3)]
         metvar=np.sum(metvar,0)
         all_var.append(metvar)
+        print(np.sum(all_var))
     metvar=np.array(all_var)
 
     lat=fh.variables['lat'][:]
